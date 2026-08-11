@@ -7,6 +7,9 @@ public class RateLimitRequest {
     public RateLimitRequest() {
     }
 
+    @NotBlank(message = "algorithm is required")
+    private String algorithm;
+
     @NotBlank(message = "key is required")
     private String key;
 
@@ -18,6 +21,14 @@ public class RateLimitRequest {
 
     @Positive(message = "time can not be negative")
     private int windowSeconds;
+
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    public void setAlgorithm(String algorithm) {
+        this.algorithm = algorithm;
+    }
 
     public String getKey() {
         return key;

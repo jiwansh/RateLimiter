@@ -1,25 +1,23 @@
 package com.jiwanshu.rate_limiter.service;
 
-import com.jiwanshu.rate_limiter.model.RateLimitRequest;
-import com.jiwanshu.rate_limiter.model.RateLimitResponse;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Service
-public class FixedWindowRateLimiterService {
+@Component
+public class FixedWindowStrategy implements RateLimiterStrategy {
 
     // key = "userId:endpoint", value = the current window's state for that key
     private final ConcurrentHashMap<String,WindowState> store = new ConcurrentHashMap<>();
 
-    public RateLimitResponse checkLimit(RateLimitRequest request){
+    @Override
+    public RateLimitResult checkLimit(String compositeKey, int limit, int windowSeconds) {
 
-        String compositeKey = request.getKey()+":"+ request.getEndpoint();
         long nowSeconds = System.currentTimeMillis() / 1000;
-
+        
         //calculates curr window start time
-        long currWindowStart = (nowSeconds / request.getWindowSeconds()) * request.getWindowSeconds();
+        long currWindowStart = (nowSeconds / windowSeconds) * windowSeconds;
 
         //updates or initializes a rate-limiting track record in a thread-safe map (store)
         // using a atomic atomic approach
@@ -30,14 +28,14 @@ public class FixedWindowRateLimiterService {
             return existing;
         });
         int newCount = state.count.incrementAndGet();
-        long resetAt =  currWindowStart + request.getWindowSeconds();
+        long resetAt =  currWindowStart + windowSeconds;
 
-        if(newCount > request.getLimit()){
-            return new RateLimitResponse(false, 0, resetAt);
+        if(newCount > limit){
+            return new RateLimitResult(false, 0, resetAt);
         }
 
-        int remaining = request.getLimit()- newCount;
-        return new RateLimitResponse(true, remaining, resetAt);
+        int remaining = limit- newCount;
+        return new RateLimitResult(true, remaining, resetAt);
     }
 
     private static class WindowState{
