@@ -28,7 +28,7 @@ public class SlidingWindowLogStrategy implements  RateLimiterStrategy{
             }
             long resetAt = (nowMills + (windowSeconds * 1000L)) / 1000;
 
-            if (timestamps.size() > limit) {
+            if (timestamps.size() >= limit) {
                 return new RateLimitResult(false, 0, resetAt);
             }
 

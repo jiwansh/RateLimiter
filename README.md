@@ -47,9 +47,18 @@ No hard reset at window edges, so the boundary burst is fixed while keeping fixe
 
 **Verified with a live side-by-side test**: same burst scenario (5 requests, wait past window reset, fire 5 more) run against both algorithms on fresh keys — fixed window allowed the full second burst (reproducing the Part 1 bug on demand), sliding window counter correctly rejected most of it.
 
+## Part 3 — Concurrency Stress Testing
+
+Wrote JUnit tests using `ExecutorService` + `CountDownLatch` to fire 100+ threads at the same key simultaneously (all released at the same instant via a start-gate latch), and asserted the total allowed count never exceeds the configured limit — proving correctness under real parallel load instead of assuming it from reading the code.
+
+**Fixed window** and **sliding window counter** held up cleanly — exactly the limit allowed, every run, even at 1000 concurrent threads across 10 repeated runs for sliding window counter.
+
+**Sliding window log leaked** — 11 allowed against a limit of 10. Root cause turned out to be a plain sequential off-by-one, not a race condition: the boundary check used `size() > limit` instead of `size() >= limit`, so a request landing exactly at the limit was incorrectly allowed through before rejection kicked in one request too late. Fixed by changing the comparison and moving the check before the mutation (never mutate shared state for a request that might get rejected). Re-verified with the same stress test — exactly 10 allowed, every run, after the fix.
+
+Notably, the bug wasn't timing-dependent — it would have reproduced with a single thread sending requests one at a time. Manual Postman testing on Part 2 missed it because it only tested exactly up to the limit and stopped at the first `429`, never precisely probing the "one past what should be rejected" boundary. The stress test caught it because it fired far more requests than the limit allowed.
+
 ## Not yet handled
 
-- Concurrency stress testing under real parallel load (Part 3)
 - Redis-backed distributed state — current implementation only works correctly on a single instance (Part 4)
 - Token bucket for controlled bursts (Part 5)
 - Failure handling when shared state is unavailable (Part 6)
