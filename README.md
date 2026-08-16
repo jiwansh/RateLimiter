@@ -57,9 +57,22 @@ Wrote JUnit tests using `ExecutorService` + `CountDownLatch` to fire 100+ thread
 
 Notably, the bug wasn't timing-dependent — it would have reproduced with a single thread sending requests one at a time. Manual Postman testing on Part 2 missed it because it only tested exactly up to the limit and stopped at the first `429`, never precisely probing the "one past what should be rejected" boundary. The stress test caught it because it fired far more requests than the limit allowed.
 
+## Part 4 — Redis-Backed Distributed State
+
+In-memory `ConcurrentHashMap` only tracks counts within a single JVM — horizontally scaled instances would each keep separate counts, letting N instances × limit through. Redis provides the shared state across instances (Redis Cloud free tier used here, not Docker).
+
+**Naive implementation** (deliberate): same overlap formula as Part 2, but `GET` (previous/current window) and `INCR` are separate network round-trips. Each command is individually atomic (Redis is single-threaded), but the gap *between* commands isn't — a classic **TOCTOU bug** (time-of-check to time-of-use), not a locking issue.
+
+**Stress test result:** 100 threads, limit 10 → **100/100 allowed**. Every thread read the same stale pre-increment count before any `INCR` landed — an unbounded leak, unlike Part 3's off-by-one.
+
+**Fix — Lua scripting:** bundled GET + compute + compare + INCR into a single script executed via `redisTemplate.execute(RedisScript, ...)`. Redis runs an entire script as one atomic unit (same single-threaded guarantee that makes a lone `INCR` atomic, applied to the whole sequence) — no client can interleave a read mid-script.
+
+**Re-verified:** same stress test → 10/10 allowed, confirmed at 500 threads.
+
+**Failure handling:** wrapped in try/catch — Redis unreachable fails **open** by default (avoids turning a Redis outage into a full API outage), with critical endpoints expected to override to fail-closed.
+
 ## Not yet handled
 
-- Redis-backed distributed state — current implementation only works correctly on a single instance (Part 4)
 - Token bucket for controlled bursts (Part 5)
 - Failure handling when shared state is unavailable (Part 6)
 - Multi-tenant configurable limits (Part 7)

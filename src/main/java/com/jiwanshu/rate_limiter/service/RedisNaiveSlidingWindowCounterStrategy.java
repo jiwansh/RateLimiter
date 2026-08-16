@@ -12,12 +12,12 @@ import org.springframework.stereotype.Component;
  */
 
 @Component
-public class RedisSlidingWindowCounterStrategy implements RateLimiterStrategy {
+public class RedisNaiveSlidingWindowCounterStrategy implements RateLimiterStrategy {
 
     private final StringRedisTemplate redisTemplate;
 
     @Autowired
-    public RedisSlidingWindowCounterStrategy(StringRedisTemplate redisTemplate) {
+    public RedisNaiveSlidingWindowCounterStrategy(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
@@ -26,10 +26,12 @@ public class RedisSlidingWindowCounterStrategy implements RateLimiterStrategy {
         long nowSeconds = System.currentTimeMillis() / 1000;
         long currentWindowStart = (nowSeconds/windowSeconds)*windowSeconds;
         long previousWindowStart = currentWindowStart-windowSeconds;
+
         // Redis keys are window-labeled — old ones just expire naturally via TTL,
         // no manual "shift" logic needed like our in-memory version
         String currentWindowKey = compositeKey+":"+currentWindowStart;
         String previousWindowKey = compositeKey+":"+previousWindowStart;
+
         // step 1: read both counts
         String currentCountStr = redisTemplate.opsForValue().get(currentWindowKey);
         String previousCountStr = redisTemplate.opsForValue().get(previousWindowKey);
@@ -41,7 +43,7 @@ public class RedisSlidingWindowCounterStrategy implements RateLimiterStrategy {
         double overlapPercentage = 1.0 - ((double)timeElapsedInCurrWindow / windowSeconds);
         double estimatedCount = (overlapPercentage*previousCount)+currentCount;
 
-        long resetAt = currentWindowStart-windowSeconds;
+        long resetAt = currentWindowStart+windowSeconds;
 
         if(estimatedCount>=limit){
             return new RateLimitResult(false,0,resetAt);

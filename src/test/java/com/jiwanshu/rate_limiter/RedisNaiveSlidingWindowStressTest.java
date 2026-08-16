@@ -1,8 +1,7 @@
 package com.jiwanshu.rate_limiter;
 
 import com.jiwanshu.rate_limiter.service.RateLimitResult;
-import com.jiwanshu.rate_limiter.service.RedisSlidingWindowCounterStrategy;
-import org.junit.jupiter.api.AutoClose;
+import com.jiwanshu.rate_limiter.service.RedisNaiveSlidingWindowCounterStrategy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,13 +16,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-public class RedisSlidingWindowStressTest {
+public class RedisNaiveSlidingWindowStressTest {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
 
     @Autowired
-    private RedisSlidingWindowCounterStrategy strategy;
+    private RedisNaiveSlidingWindowCounterStrategy strategy;
 
     @Test
     void testRedisSlidingWindowCountConcurrency() throws InterruptedException {
@@ -34,6 +33,7 @@ public class RedisSlidingWindowStressTest {
 
         //1.Flush test keys first
         redisTemplate.delete(redisTemplate.keys(key+"*"));
+
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch startSignal = new CountDownLatch(1);
         CountDownLatch doneSignal = new CountDownLatch(numberOfThreads);
