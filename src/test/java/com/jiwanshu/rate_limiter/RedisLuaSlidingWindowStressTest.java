@@ -1,6 +1,6 @@
 package com.jiwanshu.rate_limiter;
 
-import com.jiwanshu.rate_limiter.service.RateLimitResult;
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import com.jiwanshu.rate_limiter.service.RedisLuaSlidingWindowCounterStrategy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

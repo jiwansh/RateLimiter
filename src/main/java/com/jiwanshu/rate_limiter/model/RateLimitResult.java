@@ -1,4 +1,4 @@
-package com.jiwanshu.rate_limiter.service;
+package com.jiwanshu.rate_limiter.model;
 
 // used for internal result of rate limit check between interface & implementation
 public class RateLimitResult {

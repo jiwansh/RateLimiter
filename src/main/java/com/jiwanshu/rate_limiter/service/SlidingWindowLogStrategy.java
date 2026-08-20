@@ -1,5 +1,6 @@
 package com.jiwanshu.rate_limiter.service;
 
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;

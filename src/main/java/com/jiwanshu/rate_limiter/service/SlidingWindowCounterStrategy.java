@@ -7,6 +7,7 @@ package com.jiwanshu.rate_limiter.service;
 * return it
 * */
 
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;

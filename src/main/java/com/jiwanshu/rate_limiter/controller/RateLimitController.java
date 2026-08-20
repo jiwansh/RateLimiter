@@ -2,8 +2,7 @@ package com.jiwanshu.rate_limiter.controller;
 
 import com.jiwanshu.rate_limiter.model.RateLimitRequest;
 import com.jiwanshu.rate_limiter.model.RateLimitResponse;
-import com.jiwanshu.rate_limiter.service.FixedWindowStrategy;
-import com.jiwanshu.rate_limiter.service.RateLimitResult;
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import com.jiwanshu.rate_limiter.service.RateLimiterService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

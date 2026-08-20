@@ -1,5 +1,6 @@
 package com.jiwanshu.rate_limiter.service;
 
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,8 @@
 package com.jiwanshu.rate_limiter;
 
 import com.jiwanshu.rate_limiter.model.RateLimitResult;
-import com.jiwanshu.rate_limiter.service.RedisNaiveSlidingWindowCounterStrategy;
+import com.jiwanshu.rate_limiter.service.RedisLuaSlidingWindowCounterStrategy;
+import com.jiwanshu.rate_limiter.service.TokenBucketStrategy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,23 +17,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
-public class RedisNaiveSlidingWindowStressTest {
+public class TokenBucketStressTest {
 
     @Autowired
-    private StringRedisTemplate redisTemplate;
-
-    @Autowired
-    private RedisNaiveSlidingWindowCounterStrategy strategy;
+    private TokenBucketStrategy strategy;
 
     @Test
-    void testRedisSlidingWindowCountConcurrency() throws InterruptedException {
-        String key = "stress:redis:user123";
+    void testTokenBucketAlgorithm() throws InterruptedException {
+        String key = "stress:redisLua:user123";
         int limit = 10;
         int windowSeconds =60;
-        int numberOfThreads = 100;
+        int numberOfThreads = 500;
 
-        //1.Flush test keys first
-        redisTemplate.delete(redisTemplate.keys(key+"*"));
 
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
         CountDownLatch startSignal = new CountDownLatch(1);

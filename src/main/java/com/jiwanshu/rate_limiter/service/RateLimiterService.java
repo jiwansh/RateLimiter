@@ -1,5 +1,6 @@
 package com.jiwanshu.rate_limiter.service;
 
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -12,10 +13,12 @@ public class RateLimiterService {
 
     public RateLimiterService(FixedWindowStrategy fixedWindowStrategy,
                               SlidingWindowLogStrategy slidingWindowLogStrategy,
-                              SlidingWindowCounterStrategy slidingWindowCounterStrategy) {
+                              SlidingWindowCounterStrategy slidingWindowCounterStrategy,
+                              TokenBucketStrategy tokenBucketStrategy) {
         this.strategies = Map.of("fixed_window", fixedWindowStrategy,
                 "sliding_window_log",slidingWindowLogStrategy,
-                "sliding_window_counter",slidingWindowCounterStrategy);
+                "sliding_window_counter",slidingWindowCounterStrategy,
+                "token_bucket", tokenBucketStrategy);
     }
 
     public RateLimitResult checkLimit(String algorithm, String compositeKey, int limit, int windowSeconds){

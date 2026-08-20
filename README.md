@@ -71,9 +71,22 @@ In-memory `ConcurrentHashMap` only tracks counts within a single JVM — horizon
 
 **Failure handling:** wrapped in try/catch — Redis unreachable fails **open** by default (avoids turning a Redis outage into a full API outage), with critical endpoints expected to override to fail-closed.
 
+## Part 5 — Token Bucket Algorithm
+
+4th pluggable strategy, registered via the existing config-driven map with zero changes to prior strategies (Strategy pattern payoff from Part 2). In-memory only — Redis-backed version deferred.
+
+**Design**: bucket holds up to `limit` tokens, refilling continuously at `limit/windowSeconds` tokens/sec. Each request costs 1 token. Unlike sliding window (which smooths bursts away), token bucket **allows deliberate bursts up to capacity** — idle time banks unused tokens, spendable all at once. Matches how client-facing APIs (Stripe, AWS) actually behave: usage clusters in bursts, not uniform trickles.
+
+**Core trick — lazy refill:** no background thread ticking per-millisecond. Per-client state (`tokens`, `lastRefillTimestamp`) is refilled on-demand only when a request arrives: `elapsedSeconds × refillRate`, capped at capacity. Caught an integer-division bug here — `elapsedMillis / 1000` truncates to `0` for any sub-second gap; needed `/ 1000.0`.
+
+**Concurrency:** same read-modify-write race shape as Part 4's Redis bug, different mechanism (pure JVM interleaving, not network latency) — two threads can both read the same token count before either writes back, both get allowed, capacity overshoots. `AtomicInteger` doesn't cover it since two fields (`tokens` + `lastRefillTimestamp`) must update as one unit — fixed with `synchronized` on the per-key state object, wrapping the full read-refill-decide-write sequence.
+
+**`resetAt` semantics differ from other 3 algorithms:** no fixed window boundary to reset, so it's redefined as "seconds until ≥1 token available," relevant only on denial. Rounded up via `Math.ceil`, not a truncating cast — truncation could tell a client to retry in 0s when the bucket genuinely isn't ready, wasting a retry.
+
+**Stress test result:** 500 threads, burst-from-full bucket (`limit=10`), `CountDownLatch` gate → **10/10 allowed**, zero overshoot.
+
 ## Not yet handled
 
-- Token bucket for controlled bursts (Part 5)
 - Failure handling when shared state is unavailable (Part 6)
 - Multi-tenant configurable limits (Part 7)
 - Observability via Micrometer/Prometheus (Part 8)
@@ -82,4 +95,4 @@ In-memory `ConcurrentHashMap` only tracks counts within a single JVM — horizon
 
 ## Tech stack (so far)
 
-Java 17, Spring Boot 3.3.x (Web, Validation, Actuator), in-memory `ConcurrentHashMap` (Redis introduced Part 4)
+Java 17, Spring Boot 3.3.x (Web, Validation, Actuator), in-memory `ConcurrentHashMap` for local strategies, Redis (Redis Cloud, introduced Part 4) for distributed strategy, Lua scripting (Part 4) for atomic multi-step Redis operations.

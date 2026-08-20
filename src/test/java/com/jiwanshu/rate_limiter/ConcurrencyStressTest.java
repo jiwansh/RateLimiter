@@ -1,7 +1,7 @@
 package com.jiwanshu.rate_limiter;
 
 import com.jiwanshu.rate_limiter.service.FixedWindowStrategy;
-import com.jiwanshu.rate_limiter.service.RateLimitResult;
+import com.jiwanshu.rate_limiter.model.RateLimitResult;
 import com.jiwanshu.rate_limiter.service.SlidingWindowCounterStrategy;
 import com.jiwanshu.rate_limiter.service.SlidingWindowLogStrategy;
 import org.junit.jupiter.api.Test;
